@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'dart:math';
 
 class ClockPage extends StatefulWidget {
   const ClockPage({super.key});
@@ -60,6 +61,14 @@ class _ClockPageState extends State<ClockPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  SizedBox(
+                    width: 200,
+                    height: 200,
+                    child: CustomPaint(
+                      painter: ClockPainter(_currentTime),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   Text(
                     _formatTime(_currentTime),
                     style: const TextStyle(
@@ -67,7 +76,7 @@ class _ClockPageState extends State<ClockPage> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8),
                   Text(
                     _formatDate(_currentTime),
                     style: const TextStyle(
@@ -91,23 +100,50 @@ class _ClockPageState extends State<ClockPage> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                ...List.generate(
-                  _worldClocks.length,
-                  (index) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          _worldClocks[index]['name'],
-                          style: const TextStyle(fontSize: 16),
+                SizedBox(
+                  height: 160,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _worldClocks.length,
+                    itemBuilder: (context, index) {
+                      final clock = _worldClocks[index];
+                      final worldTime = _getWorldTime(clock['offset']);
+                      return Container(
+                        width: 140,
+                        margin: const EdgeInsets.only(right: 12),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        Text(
-                          _formatTime(_getWorldTime(_worldClocks[index]['offset'])),
-                          style: const TextStyle(fontSize: 16),
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text(
+                              clock['name'],
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              _formatTime(worldTime),
+                              style: const TextStyle(fontSize: 20),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _formatDate(worldTime),
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Theme.of(context).colorScheme.onBackground.withOpacity(0.6),
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
                 ),
               ],
@@ -117,4 +153,50 @@ class _ClockPageState extends State<ClockPage> {
       ),
     );
   }
+}
+
+class ClockPainter extends CustomPainter {
+  final DateTime datetime;
+  ClockPainter(this.datetime);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = min(size.width, size.height) / 2;
+
+    final paintCircle = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(center, radius, paintCircle);
+
+    final paintBorder = Paint()
+      ..color = Colors.black
+      ..strokeWidth = 4
+      ..style = PaintingStyle.stroke;
+    canvas.drawCircle(center, radius, paintBorder);
+
+    final hourAngle = (datetime.hour % 12 + datetime.minute / 60) * 30 * pi / 180;
+    _drawHand(canvas, center, radius * 0.5, hourAngle, 6, Colors.black);
+
+    final minuteAngle = datetime.minute * 6 * pi / 180;
+    _drawHand(canvas, center, radius * 0.7, minuteAngle, 4, Colors.black);
+
+    final secondAngle = datetime.second * 6 * pi / 180;
+    _drawHand(canvas, center, radius * 0.9, secondAngle, 2, Colors.red);
+  }
+
+  void _drawHand(Canvas canvas, Offset center, double length, double angle, double width, Color color) {
+    final handPaint = Paint()
+      ..color = color
+      ..strokeWidth = width
+      ..strokeCap = StrokeCap.round;
+    final offset = Offset(
+      center.dx + length * cos(angle - pi / 2),
+      center.dy + length * sin(angle - pi / 2),
+    );
+    canvas.drawLine(center, offset, handPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant ClockPainter old) => old.datetime.second != datetime.second;
 } 
