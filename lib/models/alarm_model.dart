@@ -25,7 +25,7 @@ class Alarm {
       'label': label,
       'time': time.toIso8601String(),
       'repeatDays': repeatDays,
-      'soundFile': soundFile,
+      'soundFile': soundFile.replaceAll('assets/sounds/', ''),
       'isEnabled': isEnabled,
     };
   }
@@ -36,7 +36,7 @@ class Alarm {
       label: json['label'] ?? '新鬧鐘',
       time: json['time'] != null ? DateTime.parse(json['time']) : DateTime.now(),
       repeatDays: json['repeatDays'] != null ? List<int>.from(json['repeatDays']) : [],
-      soundFile: json['soundFile'] ?? 'assets/sounds/alert.mp3',
+      soundFile: json['soundFile'] ?? 'alert.mp3',
       isEnabled: json['isEnabled'] ?? true,
     );
   }
