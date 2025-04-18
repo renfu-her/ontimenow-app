@@ -159,15 +159,15 @@ class _AlarmListTileState extends State<AlarmListTile> {
         _playAlarm();
       }
 
-      // 10 分鐘提前提醒（僅在 continuous 且尚未提醒過）
-      if (widget.alarm.continuous && !_hasNotify10Shown && difference.inMinutes == 10 && difference.inSeconds == 0) {
+      // 10 分鐘提前提醒（僅在 continuous）
+      if (widget.alarm.continuous && !_hasNotify10Shown && difference.inSeconds <= 600 && difference.inSeconds > 0) {
         _hasNotify10Shown = true;
         _showNotificationDialog('提前 10 分鐘');
         _playNotification();
       }
 
-      // 5 分鐘提前提醒
-      if (widget.alarm.continuous && !_hasNotify5Shown && difference.inMinutes == 5 && difference.inSeconds == 0) {
+      // 5 分鐘提前提醒（僅在 continuous）
+      if (widget.alarm.continuous && !_hasNotify5Shown && difference.inSeconds <= 300 && difference.inSeconds > 0) {
         _hasNotify5Shown = true;
         _showNotificationDialog('提前 5 分鐘');
         _playNotification();
