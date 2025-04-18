@@ -198,17 +198,34 @@ class _AlarmListTileState extends State<AlarmListTile> {
   void _showNotificationDialog(String message) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('提醒'),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('確定'),
-          ),
-        ],
-      ),
+      builder: (context) {
+        // 30 秒後自動關閉對話框
+        Future.delayed(const Duration(seconds: 30), () {
+          if (context.mounted) {
+            Navigator.of(context).pop();
+          }
+        });
+
+        return AlertDialog(
+          title: const Text('提醒'),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('確定'),
+            ),
+          ],
+        );
+      },
     );
+
+    // 播放提醒音效
+    _playNotification().then((_) {
+      // 30 秒後停止音效
+      Future.delayed(const Duration(seconds: 30), () {
+        _audioPlayer.stop();
+      });
+    });
   }
 
   Future<void> _playAlarm() async {
