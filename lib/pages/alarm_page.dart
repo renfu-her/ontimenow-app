@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/alarm_model.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'dart:async';
 
 class AlarmPage extends StatelessWidget {
   const AlarmPage({super.key});
@@ -49,10 +50,78 @@ class AlarmPage extends StatelessWidget {
   }
 }
 
-class AlarmListTile extends StatelessWidget {
+class AlarmListTile extends StatefulWidget {
   final Alarm alarm;
 
   const AlarmListTile({super.key, required this.alarm});
+
+  @override
+  State<AlarmListTile> createState() => _AlarmListTileState();
+}
+
+class _AlarmListTileState extends State<AlarmListTile> {
+  Timer? _timer;
+  String _timeRemaining = '';
+  final AudioPlayer _audioPlayer = AudioPlayer();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.alarm.isEnabled) {
+      _startTimer();
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _audioPlayer.dispose();
+    super.dispose();
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      final now = DateTime.now();
+      final alarmTime = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        widget.alarm.time.hour,
+        widget.alarm.time.minute,
+      );
+
+      if (alarmTime.isBefore(now)) {
+        alarmTime.add(const Duration(days: 1));
+      }
+
+      final difference = alarmTime.difference(now);
+      final minutes = difference.inMinutes;
+
+      setState(() {
+        if (minutes <= 0) {
+          _timeRemaining = '${widget.alarm.label}的時間到了';
+          _playAlarm();
+        } else if (minutes == 5) {
+          _timeRemaining = '還有 5 分鐘';
+          _playNotification();
+        } else if (minutes == 10) {
+          _timeRemaining = '還有 10 分鐘';
+          _playNotification();
+        } else {
+          _timeRemaining = '';
+        }
+      });
+    });
+  }
+
+  Future<void> _playAlarm() async {
+    await _audioPlayer.play(AssetSource(widget.alarm.soundFile));
+  }
+
+  Future<void> _playNotification() async {
+    await _audioPlayer.play(AssetSource('assets/sounds/alert.mp3'));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,9 +134,17 @@ class AlarmListTile extends StatelessWidget {
           child: Row(
             children: [
               Switch(
-                value: alarm.isEnabled,
+                value: widget.alarm.isEnabled,
                 onChanged: (value) {
-                  context.read<AlarmModel>().toggleAlarm(alarm.id);
+                  context.read<AlarmModel>().toggleAlarm(widget.alarm.id);
+                  if (value) {
+                    _startTimer();
+                  } else {
+                    _timer?.cancel();
+                    setState(() {
+                      _timeRemaining = '';
+                    });
+                  }
                 },
               ),
               const SizedBox(width: 16),
@@ -76,7 +153,7 @@ class AlarmListTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${alarm.time.hour.toString().padLeft(2, '0')}:${alarm.time.minute.toString().padLeft(2, '0')}',
+                      '${widget.alarm.time.hour.toString().padLeft(2, '0')}:${widget.alarm.time.minute.toString().padLeft(2, '0')}',
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -84,18 +161,29 @@ class AlarmListTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      alarm.label,
+                      widget.alarm.label,
                       style: const TextStyle(
                         fontSize: 16,
                         color: Colors.grey,
                       ),
                     ),
+                    if (_timeRemaining.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        _timeRemaining,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.red,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 4),
                     Wrap(
                       spacing: 4,
                       children: [
                         for (int i = 0; i < 7; i++)
-                          if (alarm.repeatDays.contains(i))
+                          if (widget.alarm.repeatDays.contains(i))
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 8,
@@ -133,7 +221,7 @@ class AlarmListTile extends StatelessWidget {
                         ),
                         TextButton(
                           onPressed: () {
-                            context.read<AlarmModel>().deleteAlarm(alarm.id);
+                            context.read<AlarmModel>().deleteAlarm(widget.alarm.id);
                             Navigator.pop(context);
                           },
                           child: const Text('確定'),
@@ -153,7 +241,7 @@ class AlarmListTile extends StatelessWidget {
   void _showEditAlarmDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => AddAlarmDialog(alarm: alarm),
+      builder: (context) => AddAlarmDialog(alarm: widget.alarm),
     );
   }
 }
