@@ -194,7 +194,6 @@ class _AlarmListTileState extends State<AlarmListTile> {
   void _stopAlarm() {
     _timer?.cancel();
     _audioPlayer.stop();
-    _audioPlayer.dispose();
     _isPlaying = false;
     _hasAlarmShown = false;
     _hasNotify5Shown = false;
@@ -221,7 +220,9 @@ class _AlarmListTileState extends State<AlarmListTile> {
             onPressed: () {
               _stopAlarm();
               Navigator.pop(context);
-              context.read<AlarmModel>().toggleAlarm(widget.alarm.id);
+              if (widget.alarm.repeatDays.isEmpty) {
+                context.read<AlarmModel>().toggleAlarm(widget.alarm.id);
+              }
             },
             child: const Text('已經出門了'),
           ),
