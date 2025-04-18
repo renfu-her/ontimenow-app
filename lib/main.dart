@@ -43,6 +43,12 @@ class MyApp extends StatelessWidget {
             backgroundColor: Color(0xFF2B9FA8),
             foregroundColor: Colors.white,
           ),
+          elevatedButtonTheme: ElevatedButtonThemeData(
+            style: ElevatedButton.styleFrom(
+              minimumSize: const Size(120, 48),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            ),
+          ),
           useMaterial3: true,
         ),
         localizationsDelegates: const [
