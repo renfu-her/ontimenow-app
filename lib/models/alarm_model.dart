@@ -9,6 +9,7 @@ class Alarm {
   final List<int> repeatDays;
   final String soundFile;
   final bool isEnabled;
+  final bool continuous;
 
   Alarm({
     required this.id,
@@ -17,6 +18,7 @@ class Alarm {
     required this.repeatDays,
     required this.soundFile,
     this.isEnabled = true,
+    this.continuous = false,
   });
 
   Map<String, dynamic> toJson() {
@@ -27,6 +29,7 @@ class Alarm {
       'repeatDays': repeatDays,
       'soundFile': soundFile.replaceAll('assets/sounds/', ''),
       'isEnabled': isEnabled,
+      'continuous': continuous,
     };
   }
 
@@ -38,6 +41,7 @@ class Alarm {
       repeatDays: json['repeatDays'] != null ? List<int>.from(json['repeatDays']) : [],
       soundFile: json['soundFile'] ?? 'alert.mp3',
       isEnabled: json['isEnabled'] ?? true,
+      continuous: json['continuous'] ?? false,
     );
   }
 }
@@ -100,6 +104,7 @@ class AlarmModel extends ChangeNotifier {
         repeatDays: alarm.repeatDays,
         soundFile: alarm.soundFile,
         isEnabled: !alarm.isEnabled,
+        continuous: alarm.continuous,
       );
       await _saveAlarms();
       notifyListeners();

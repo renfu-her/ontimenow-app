@@ -21,7 +21,28 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'OnTimeNow',
         theme: ThemeData(
-          primarySwatch: Colors.blue,
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: const Color(0xFF8B4B62), // 酒紅色作為基礎色
+            brightness: Brightness.light,
+            primary: const Color(0xFF8B4B62), // 主要顏色：酒紅色
+            secondary: const Color(0xFF2B9FA8), // 次要顏色：青色
+            background: const Color(0xFFF5F5F5), // 背景色：淺灰色
+            surface: Colors.white,
+            error: const Color(0xFFB00020),
+          ),
+          appBarTheme: const AppBarTheme(
+            backgroundColor: Color(0xFF8B4B62),
+            foregroundColor: Colors.white,
+            elevation: 0,
+          ),
+          bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+            selectedItemColor: Color(0xFF8B4B62),
+            unselectedItemColor: Colors.grey,
+          ),
+          floatingActionButtonTheme: const FloatingActionButtonThemeData(
+            backgroundColor: Color(0xFF2B9FA8),
+            foregroundColor: Colors.white,
+          ),
           useMaterial3: true,
         ),
         localizationsDelegates: const [

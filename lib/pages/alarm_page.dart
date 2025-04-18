@@ -8,11 +8,29 @@ import 'package:flutter/foundation.dart';
 class AlarmPage extends StatelessWidget {
   const AlarmPage({super.key});
 
+  String _getWeekdayText() {
+    final weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+    final now = DateTime.now();
+    return '星期${weekdays[now.weekday % 7]}';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('鬧鐘'),
+        title: Row(
+          children: [
+            const Text('鬧鐘'),
+            const SizedBox(width: 16),
+            Text(
+              _getWeekdayText(),
+              style: TextStyle(
+                fontSize: 16,
+                color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
+              ),
+            ),
+          ],
+        ),
       ),
       body: Consumer<AlarmModel>(
         builder: (context, alarmModel, child) {
@@ -32,8 +50,7 @@ class AlarmPage extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddAlarmDialog(context),
-        backgroundColor: Colors.teal,
-        child: const Icon(Icons.add, color: Colors.white),
+        child: const Icon(Icons.add),
       ),
     );
   }
@@ -59,6 +76,9 @@ class _AlarmListTileState extends State<AlarmListTile> {
   Timer? _timer;
   final AudioPlayer _audioPlayer = AudioPlayer();
   bool _isPlaying = false;
+  bool _hasAlarmShown = false;
+  bool _hasNotify5Shown = false;
+  bool _hasNotify10Shown = false;
 
   @override
   void initState() {
@@ -103,6 +123,11 @@ class _AlarmListTileState extends State<AlarmListTile> {
       return;
     }
 
+    // 重置提醒狀態
+    _hasAlarmShown = false;
+    _hasNotify5Shown = false;
+    _hasNotify10Shown = false;
+
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!widget.alarm.isEnabled || !_shouldCheckAlarm()) {
         _stopAlarm();
@@ -122,22 +147,29 @@ class _AlarmListTileState extends State<AlarmListTile> {
       final difference = alarmTime.difference(now);
       
       // 如果時間已過，停止計時器
-      if (difference.isNegative) {
+      if (difference.isNegative && !_isPlaying) {
         _timer?.cancel();
         return;
       }
 
-      // 到達鬧鐘時間
-      if (difference.inMinutes == 0 && difference.inSeconds == 0 && !_isPlaying) {
+      // 到達鬧鐘時間（只播一次）
+      if (difference.inSeconds <= 0 && !_hasAlarmShown) {
+        _hasAlarmShown = true;
         _showAlarmDialog('${widget.alarm.label}的時間到了');
         _playAlarm();
-      } 
-      // 提前提醒
-      else if (difference.inMinutes == 5 && difference.inSeconds == 0) {
-        _showNotificationDialog('還有 5 分鐘');
+      }
+
+      // 10 分鐘提前提醒（僅在 continuous 且尚未提醒過）
+      if (widget.alarm.continuous && !_hasNotify10Shown && difference.inMinutes == 10 && difference.inSeconds == 0) {
+        _hasNotify10Shown = true;
+        _showNotificationDialog('提前 10 分鐘');
         _playNotification();
-      } else if (difference.inMinutes == 10 && difference.inSeconds == 0) {
-        _showNotificationDialog('還有 10 分鐘');
+      }
+
+      // 5 分鐘提前提醒
+      if (widget.alarm.continuous && !_hasNotify5Shown && difference.inMinutes == 5 && difference.inSeconds == 0) {
+        _hasNotify5Shown = true;
+        _showNotificationDialog('提前 5 分鐘');
         _playNotification();
       }
     });
@@ -164,6 +196,9 @@ class _AlarmListTileState extends State<AlarmListTile> {
     _audioPlayer.stop();
     _audioPlayer.dispose();
     _isPlaying = false;
+    _hasAlarmShown = false;
+    _hasNotify5Shown = false;
+    _hasNotify10Shown = false;
   }
 
   void _showAlarmDialog(String message) {
@@ -314,7 +349,10 @@ class _AlarmListTileState extends State<AlarmListTile> {
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.delete_outline),
+                icon: Icon(
+                  Icons.delete_outline,
+                  color: Theme.of(context).colorScheme.error,
+                ),
                 onPressed: () {
                   showDialog(
                     context: context,
@@ -367,6 +405,7 @@ class _AddAlarmDialogState extends State<AddAlarmDialog> {
   late String _label;
   late List<int> _repeatDays;
   late String _soundFile;
+  bool _continuous = false;
   final AudioPlayer _audioPlayer = AudioPlayer();
 
   final List<Map<String, String>> _soundOptions = const [
@@ -383,9 +422,12 @@ class _AddAlarmDialogState extends State<AddAlarmDialog> {
         : TimeOfDay.now();
     _label = widget.alarm?.label ?? '新鬧鐘';
     _repeatDays = widget.alarm?.repeatDays ?? [];
+    _continuous = widget.alarm?.continuous ?? false;
     
     // 從完整路徑中提取檔案名稱
-    String soundFileName = widget.alarm?.soundFile?.split('/').last ?? 'alert.mp3';
+    String soundFileName = widget.alarm?.soundFile != null 
+        ? widget.alarm!.soundFile.split('/').last 
+        : 'alert.mp3';
     _soundFile = soundFileName;
   }
 
@@ -450,6 +492,17 @@ class _AddAlarmDialogState extends State<AddAlarmDialog> {
               ],
             ),
             const SizedBox(height: 16),
+            Row(
+              children: [
+                Checkbox(
+                  value: _continuous,
+                  onChanged: (v) => setState(() => _continuous = v ?? false),
+                ),
+                const SizedBox(width: 8),
+                const Text('持續提醒'),
+              ],
+            ),
+            const SizedBox(height: 16),
             DropdownButtonFormField<String>(
               value: _soundFile,
               decoration: const InputDecoration(
@@ -499,6 +552,7 @@ class _AddAlarmDialogState extends State<AddAlarmDialog> {
               time: alarmTime,
               repeatDays: _repeatDays,
               soundFile: _getFullSoundPath(_soundFile),
+              continuous: _continuous,
             );
 
             if (widget.alarm == null) {
