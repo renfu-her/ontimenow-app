@@ -19,7 +19,7 @@ class MyApp extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (context) => AlarmModel(),
       child: MaterialApp(
-        title: 'OnTimeNow',
+        title: '遲到剋星',
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(
             seedColor: const Color(0xFF8B4B62), // 酒紅色作為基礎色
